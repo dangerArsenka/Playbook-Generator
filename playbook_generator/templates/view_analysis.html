@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Saved Analysis #{{ analysis_id }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Saved Analysis <span class="soc-highlight">#{{ analysis_id }}</span></h1>
+            <p>{{ analysis.created_at }}</p>
+            <div class="nav-links">
+                <a href="{{ url_for('index') }}">New Analysis</a>
+                <a href="{{ url_for('history') }}">History</a>
+                <a href="{{ url_for('export_pdf', analysis_id=analysis_id) }}">Export PDF</a>
+            </div>
+        </div>
+
+        <div class="analysis-grid">
+            <div class="analysis-card">
+                <h2>&gt; ORIGINAL SCENARIO</h2>
+                <p>{{ original_prompt }}</p>
+            </div>
+
+            <div class="analysis-card">
+                <h2>&gt; INCIDENT SUMMARY</h2>
+                <p>AI-Based Estimated Severity: <span class="severity-badge severity-{{ severity.level }}">{{ severity.level }}</span></p>
+                <p>Confidence: <span class="confidence-badge">{{ severity.confidence }}</span></p>
+                <p><strong>Rationale:</strong> {{ severity.rationale }}</p>
+                <p><strong>IOC Context:</strong> {{ severity.ioc_context_note }}</p>
+                <form method="post" action="{{ url_for('delete_analysis', analysis_id=analysis_id) }}" onsubmit="return confirm('Delete this saved analysis?');">
+                    <button class="delete-button wide" type="submit">DELETE THIS ANALYSIS</button>
+                </form>
+            </div>
+
+            <div class="analysis-card">
+                <h2>&gt; THREAT INTELLIGENCE AGENT ANALYSIS</h2>
+                {% if enriched_iocs %}
+                <div class="table-wrapper">
+                    <table>
+                        <thead><tr><th>IOC</th><th>Type</th><th>Sources Checked</th><th>Malicious Sources</th><th>Verdict</th><th>Confidence</th><th>Summary</th></tr></thead>
+                        <tbody>
+                        {% for ioc in enriched_iocs %}
+                        <tr>
+                            <td>{{ ioc.value }}</td><td>{{ ioc.type }}</td><td>{{ ioc.sources_checked|join(', ') if ioc.sources_checked else 'None' }}</td><td>{{ ioc.malicious_sources }}</td><td>{{ ioc.verdict }}</td><td>{{ ioc.confidence }}</td><td>{{ ioc.display_summary if ioc.display_summary is defined else ioc.summary }}</td>
+                        </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}<p class="empty-state">No indicators of compromise were extracted from this scenario.</p>{% endif %}
+            </div>
+
+            <div class="analysis-card">
+                <h2>&gt; AI-ASSISTED MITRE ATT&CK SUGGESTIONS</h2>
+                {% if mitre_matches %}
+                <div class="table-wrapper">
+                    <table>
+                        <thead><tr><th>Technique ID</th><th>Technique Name</th><th>Tactic</th><th>Confidence</th><th>Evidence</th><th>Reasoning</th></tr></thead>
+                        <tbody>
+                        {% for item in mitre_matches %}
+                        <tr>
+                            <td>{{ item.technique_id }}</td><td>{{ item.technique_name }}</td><td>{{ item.tactic }}</td><td>{{ item.confidence }}</td><td>{{ item.evidence }}</td><td>{{ item.reasoning }}</td>
+                        </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}<p class="empty-state">No possible MITRE ATT&CK techniques were suggested.</p>{% endif %}
+            </div>
+        </div>
+
+        <div class="response-area">
+            <h2>&gt; GENERATED PLAYBOOK:</h2>
+            <div class="response-text">{{ response_text | safe }}</div>
+        </div>
+    </div>
+
+    <script type="module" src="{{ url_for('static', filename='mermaid-renderer.js') }}"></script>
+</body>
+</html>
